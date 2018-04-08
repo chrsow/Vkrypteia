@@ -1,3 +1,6 @@
 # Vkrypteia
 
-Mobile Platform for voting on Ethereum blockchain.
+Mobile Platform for voting on Ethereum blockchain. This project is senior project in computer engineering, Chulalongkorn university.
+
+## Installation
+....
