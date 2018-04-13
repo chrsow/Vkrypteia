@@ -1,0 +1,2 @@
+1. create mnemonic: 'https://ethtools.com/mainnet/wallet/create/'
+2. mnemonic => private key: 'https://www.mytokenwallet.com/bip39.html'
