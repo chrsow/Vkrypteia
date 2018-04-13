@@ -32,7 +32,7 @@ const RemoverVoterIcon = styled(Icon)`
 
 `;
 
-class VotingCreationScreen extends React.PureComponent{
+class VotingCreationScreen extends React.Component{
   state = {
     question: '',
     voters: [],
@@ -91,24 +91,22 @@ class VotingCreationScreen extends React.PureComponent{
       this.setState({isCreating: true}, async ()=>{
         let contractAddress = await Contract.deploy();
         if(contractAddress){
-          console.log(contractAddress);
+          console.log('contractAddress: ' + contractAddress);
           this.props.updateContract(contractAddress);
           this.setState({ isDeployContractSuccess: true }, async()=>{
-            let beginSetupSuccess = await Contract.call(contractAddress,'beginSignup',[question, 500000, voters]);
-            console.log("beginSignup success?" + beginSetupSuccess);
-            // let voters = await Contract.call(contractAddress, 'addresses');
-            const { _success, _message } = beginSetupSuccess;
+            let beginSetupSuccess = await Contract.call(contractAddress,'beginSignup',[question, 1200, 1200, voters]);
+            const { _success, _error } = beginSetupSuccess;
+            console.log("beginSignup success?" + _success);
             if(_success){
               this.setState({ isBeginSignupSuccess: true });
             }else{
               // error message
-              // Alert.alert _message
-              this.setState({ isCreating: false });
+              this.this.setState({isCreating: false});
             }
           });
         } else {
-          // Alert
-          this.setState({ isCreating: false });
+          this.setState({isCreating: false});
+          this._alertFaiedDeployContract();
         }
       });
     }
@@ -166,6 +164,15 @@ class VotingCreationScreen extends React.PureComponent{
     );
   }
 
+  _alertFaiedDeployContract = () => {
+    Alert.alert(
+      'Deployed Failed',
+      'Something wrong on deploying contract.',
+      [
+        {text: 'Go Back',onPress: ()=>{} }
+      ]
+    );
+  }
   
 
   _renderVoterList = () => (
@@ -219,13 +226,14 @@ class VotingCreationScreen extends React.PureComponent{
   render(){
     const { 
       isAddingVoter,question, isCreating, isDeployContractSuccess,
-      isBeginSignupSuccess } = this.state;
+      isBeginSignupSuccess, voters } = this.state;
 
     const { contractAddress } = this.props.contract;
 
     const votingModalScreenProps = {
       question, isCreating, isDeployContractSuccess, 
-      isBeginSignupSuccess, contractAddress
+      isBeginSignupSuccess, contractAddress,
+      totalEligible: voters.length
     };
     return(
       <View>
