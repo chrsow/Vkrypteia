@@ -10,12 +10,18 @@ import VotingHistoryDetail from './VotingHistoryDetail';
 const VotingHistoryView = styled.View`
   /* justify-content: center; */
 `;
-
 class VotingHistoryScreen extends React.PureComponent{
-  _onPressVoteDetail = () => {
+  constructor(props){
+    super(props);
+    const { voteHistory } = this.props.screenProps.history;
+    this.state = {
+      voteHistory
+    }
+  }
+  _onPressVoteDetail = (contractAddress, question, result) => {
     const { navigate } = this.props.navigation;
     navigate('VotingHistoryDetail',{
-      
+      contractAddress, question, result
     })
   }
 
@@ -23,19 +29,21 @@ class VotingHistoryScreen extends React.PureComponent{
     <List>
     {
       // this.props.voteHistory.map(()=>(
-      [{title:'sadf',
-        avatar_url: 'https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg',
-
-      }].map((vote, index)=>(
-        <ListItem
-          roundAvatar
-          avatar={{uri:vote.avatar_url}}
-          key={index}
-          title={vote.name}
-          subtitle={vote.subtitle}
-          onPress={this._onPressVoteDetail}
-        />
-      ))
+      this.state.voteHistory.map((vote, index)=>{
+        const {contractAddress, question, result} = vote;
+        return(
+          <ListItem
+            roundAvatar
+            avatar={{}}
+            key={index}
+            title={question}
+            subtitle={contractAddress}
+            rightTitle={(result[0] > result[1]) ? 'Yes' : 'No'}
+            rightTitleStyle={{color: 'green'}}
+            onPress={() => this._onPressVoteDetail(contractAddress, question, result)}
+          />
+        )
+      })
     }
     </List>
   )
@@ -50,17 +58,6 @@ class VotingHistoryScreen extends React.PureComponent{
   }
 }
 
-// class VotingHistoryScreen extends React.PureComponent{
-//   render(){
-//     return(
-//       <VotingHistoryStack navigation={addNavigationHelpers({
-//         dispatch: this.props.dispatch,
-//         state: this.props.navigation ,
-//       })} />
-//     );
-//   }
-// }
-
 const VotingHistoryStack = StackNavigator({
   VotingHistory: {
     screen: VotingHistoryScreen,
@@ -68,16 +65,12 @@ const VotingHistoryStack = StackNavigator({
   },
   VotingHistoryDetail: {
     screen: VotingHistoryDetail,
-    title: 'Detail'
+    // title: 'Detail'
+    navigationOptions: {
+      // headerTitle: 'Result',
+      showLabel: false
+    }
   }
 });
 
-// const mapStateToProps = ({history}) => {
-//   // const mapStateToProps = (state) => {
-//     const {voteHistory} = history;
-//     return {voteHistory};
-//   }
-
-  // connect(mapStateToProps)(
-// export default VotingHistoryScreen;
 export default VotingHistoryStack;

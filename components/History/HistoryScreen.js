@@ -5,10 +5,36 @@ import {
 // import { createBottomTabNavigator } from 'react-navigation';
 import { createMaterialTopTabNavigator } from 'react-navigation-tabs';
 import { TabNavigator } from 'react-navigation';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 import QRCodeScreen from '../Common/QRCodeScreen';
 import VotingHistoryScreen from './VotingHistoryScreen';
 import ScanHistoryScreen from './ScanHistoryScreen';
+
+import styled from 'styled-components';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { updateScanVoteHistory } from '../../reducers/history'
+
+const HistoryScreenView = styled(View)`
+  flex: 1;
+  flex-direction: column;
+`;
+
+const HistoryHeaderView = styled(View)`
+  justify-content: center;
+  align-items: center;
+  background-color: #B46486;
+  /* height: 200; */
+  padding: 15px;
+`;
+
+const HeaderText = styled(Text)`
+  color: white;
+  font-size: 22;
+  font-weight: bold;
+  margin-top: 10;
+`
 
 const HistoryTabs = TabNavigator(
   {
@@ -21,14 +47,39 @@ const HistoryTabs = TabNavigator(
       // path: 'scan-history'
     }
   },{
-    
     initialRouteName: 'History',
-    // activeTintColor: '#F44336',
     tabBarOptions:{
+      labelStyle: {
+        fontSize: 12,
+      },
+      style: {
 
+        backgroundColor: '#4F80E1',
+      },
     },
     tabBarPosition: 'top'
   }
-);
+)
 
-export default HistoryTabs;
+const HistoryScreen = (props) => (
+  <HistoryScreenView>
+    <HistoryHeaderView>
+      <Icon color='white' name='rocket' size={62} />
+      <HeaderText> History </HeaderText>
+    </HistoryHeaderView>
+    <HistoryTabs
+      screenProps={{
+        history: props.history, 
+        actions:{
+          updateScanVoteHistory: props.updateScanVoteHistory
+        }
+      }}
+    />
+  </HistoryScreenView>
+)
+
+const mapStateToProps = ({history}) => ({history})
+const mapDispatchToProps = dispacth => 
+  bindActionCreators({updateScanVoteHistory}, dispacth)
+  
+export default connect(mapStateToProps, mapDispatchToProps)(HistoryScreen);

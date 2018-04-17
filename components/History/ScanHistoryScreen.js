@@ -1,72 +1,91 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import { connect } from 'react-redux';
 import { CheckBox, List, ListItem } from 'react-native-elements';
 import { StackNavigator } from 'react-navigation';
 import { Button } from 'react-native-elements';
-
 import QRCodeScreen from '../Common/QRCodeScreen';
 import VotingHistoryDetail from './VotingHistoryDetail';
+import styled from 'styled-components';
+import Contract from '../../utils/Contract';
+
+const ScanHistoryView = styled.View`
+
+`
 
 class ScanHistoryScreen extends React.PureComponent{
-  _onScanVotingHistory = () => {
-
+  constructor(props){
+    super(props);
+    const {scanHistory} = this.props.screenProps.history;
+    this.state = {
+      scanHistory,
+      isScanningVoteHistory: false,
+      isLoadingVoteHistory: false
+    }
   }
 
-  _onPressVoteDetail = () => {
+  _onScanVoteHistory = async (contractAddress) => {
+    this.setState({isScanningVoteHistory: false, isLoadingVoteHistory: true});
+    const [question, result] = await Promise.all(
+      [Contract.call(contractAddress, 'question'), Contract.call(contractAddress, 'computeTally')]
+    )
+    const _result = [Number(result[0]), Number(result[1])];
+    this.props.screenProps.actions.updateScanVoteHistory(contractAddress, question, _result)
+    this.setState({isLoadingVoteHistory: question === ''})
+  }
+
+  _onPressCancelModal = () => this.setState({isScanningVoteHistory: false})
+
+  _onPressVoteDetail = (contractAddress, question, result) => {
     const { navigate } = this.props.navigation;
-    navigate('VotingHistoryDetail',{
-      
+    navigate('ScanVotingHistoryDetail',{
+      contractAddress, question, result
     })
   }
 
   _renderScanVotingHistory = () => (
-    <List containerStyle={{marginBottom: 20}}>
+    <List>
     {
       // this.props.voteHistory.map(()=>(
-      [{title:'sadf',
-        avatar_url: 'https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg',
-
-      }].map((vote, index)=>(
-        <ListItem
-          roundAvatar
-          avatar={{uri:vote.avatar_url}}
-          key={index}
-          title={vote.name}
-          subtitle={vote.subtitle}
-          onPress={this._onPressVoteDetail}
-        />
-      ))
+      this.state.scanHistory.map((vote, index)=>{
+        const {contractAddress, question, result} = vote;
+        return(
+          <ListItem
+            roundAvatar
+            // avatar={{uri:vote.avatar_url}}
+            key={index}
+            title={question}
+            subtitle={contractAddress}
+            onPress={() => this._onPressVoteDetail(contractAddress, question, result)}
+          />
+        )
+      })
     }
     </List>
   )
 
 
   render(){
+    const {isScanningVoteHistory, isLoadingVoteHistory} = this.state;
     return(
-      <View style={styles.container}>
+      <ScanHistoryView>
         <Button 
           raised
           icon={{name: 'add'}}
           title='Add New Vote History'
-          onPress={this._onScanVotingHistory}
+          onPress={()=> this.setState({isScanningVoteHistory: true})}
         />
+        {isLoadingVoteHistory && <Text> Loading ... </Text>}
         {this._renderScanVotingHistory()}
-      </View>
+        {
+          isScanningVoteHistory && 
+          <QRCodeScreen
+            _onPressCancelModal={this._onPressCancelModal} 
+            _onReadQrCode={this._onScanVoteHistory}
+          />
+        }
+      </ScanHistoryView>
     )
   }
-}
-
-const styles = StyleSheet.create({
-  container:{
-    flex: 1,
-    // justifyContent: 'center',
-    // alignItems: 'center'
-  }
-});
-
-const mapStateToProps = ({}) => {
-
 }
 
 const ScanHistoryStack = StackNavigator({
@@ -74,7 +93,7 @@ const ScanHistoryStack = StackNavigator({
     screen: ScanHistoryScreen,
     // title: 'Eeiei'
   },
-  VotingHistoryDetail: { screen: VotingHistoryDetail }
+  ScanVotingHistoryDetail: { screen: VotingHistoryDetail }
 });
 
 export default ScanHistoryStack;
