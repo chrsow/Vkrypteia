@@ -32,6 +32,6 @@ export const updateVoteHistory = (contractAddress, question, result) => ({
 })
 
 export const updateScanVoteHistory = (contractAddress, question, result) => ({
-  type: UPDATE_VOTE_HISTORY,
+  type: UPDATE_SCAN_VOTE_HISTORY,
   payload: {contractAddress, question, result}
 })
