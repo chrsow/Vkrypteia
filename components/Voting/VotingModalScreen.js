@@ -5,18 +5,20 @@ import StepIndicator from 'react-native-step-indicator';
 import { ViewPager } from 'rn-viewpager';
 import QRCode from 'react-native-qrcode-svg';
 import BarGraph from '../Common/BarGraph';
+import { Button, Icon } from 'react-native-elements';
 import getWeb3 from '../../utils/getWeb3';
 import Contract from '../../utils/Contract';
 import { connect } from 'react-redux';
-import { Button } from 'react-native-elements';
-
+import { bindActionCreators } from 'redux';
+import { updateVoteHistory } from '../../reducers/history';
 
 // ModalView for voting creation
 const ModalView = styled(View)`
-  margin-top: 22;
+  /* margin-top: 22; */
+  flex-direction: column;
   flex: 1;
   /* justify-content: center; */
-  align-items: center;
+  /* align-items: center; */
   /* width: 100%; */
 `;
 
@@ -33,8 +35,9 @@ const ViewPagerView = styled(ViewPager)`
   flex-grow: 1;
 `;
 
-const PageView = styled(View)`
+const StepView = styled(View)`
   flex: 1;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 `;
@@ -45,27 +48,43 @@ const customStyles = {
   currentStepIndicatorSize:30,
   separatorStrokeWidth: 2,
   currentStepStrokeWidth: 3,
-  stepStrokeCurrentColor: '#fe7013',
+  stepStrokeCurrentColor: '#4F80E1', //'#fe7013',
   stepStrokeWidth: 3,
-  stepStrokeFinishedColor: '#fe7013',
+  stepStrokeFinishedColor: '#4F80E1',//'#fe7013',
   stepStrokeUnFinishedColor: '#aaaaaa',
-  separatorFinishedColor: '#fe7013',
+  separatorFinishedColor: '#4F80E1',//'#fe7013',
   separatorUnFinishedColor: '#aaaaaa',
-  stepIndicatorFinishedColor: '#fe7013',
+  stepIndicatorFinishedColor: '#4F80E1',//'#fe7013',
   stepIndicatorUnFinishedColor: '#ffffff',
   stepIndicatorCurrentColor: '#ffffff',
   stepIndicatorLabelFontSize: 13,
   currentStepIndicatorLabelFontSize: 13,
-  stepIndicatorLabelCurrentColor: '#fe7013',
+  stepIndicatorLabelCurrentColor: '#4F80E1',//'#fe7013',
   stepIndicatorLabelFinishedColor: '#ffffff',
   stepIndicatorLabelUnFinishedColor: '#aaaaaa',
   labelColor: '#999999',
   labelSize: 13,
-  currentStepLabelColor: '#fe7013'
+  currentStepLabelColor: '#4F80E1',//'#fe7013'
 }
 
-const web3 = getWeb3();
+// const MyFont = Expo.Font.style('Montserrat-Light');
+const StepText = styled.Text`
+  /* font-family: MyFont; */
+`
 
+// Step1
+const DeployText = styled.Text`
+
+`
+
+const SignupText = styled.Text`
+
+`
+
+// Step2
+
+
+const web3 = getWeb3();
 
 class VotingModalScreen extends React.Component {
   constructor(props){
@@ -129,11 +148,9 @@ class VotingModalScreen extends React.Component {
 
     // Listen for voter voting
     if(isRegistrationSuccess && !isVotingSuccess){
-      console.log('Listen on Vote');
       this.state.contractInstance.once('VoterVoted',{},(err,res)=>{
         if(!err){
           const {returnValues:{_totalVoted}} = res;
-          console.log('_totalVoted: ' + _totalVoted);
           _totalVoted = Number(_totalVoted);
           this.setState({
             totalVoted: _totalVoted,
@@ -150,13 +167,14 @@ class VotingModalScreen extends React.Component {
     if(isVotingSuccess && !isFinish){
       try{
         const result = await Contract.call(contractAddress, 'computeTally');
-        console.log('vote result: ');
-        console.log(result);
+        const {question, updateVoteHistory} = this.props;
         this.setState({
           isStartingComputeTally: false,
           result: [Number(result[0]), Number(result[1])],
           isFinish: true
         });
+        // Save to history
+        updateVoteHistory(contractAddress, question, result);
       }catch(error){
         console.log(error)
       }
@@ -166,14 +184,17 @@ class VotingModalScreen extends React.Component {
   // Step 1
   _renderSetupStep = () => {
     return (
-      <PageView>
+      <StepView>
         { this.props.isDeployContractSuccess ? (
           <View>
-            <Text> [+] 1/1 Deploy Contract Sucess </Text>
+            <StepText> [+] 1/1 Deploy Contract Sucess </StepText>
           </View>
         ):(
           // Some Loader here
-          <View><Text> [-] 0/1 Deploying Contract</Text></View>
+          <View>
+            <Icon name='loading' type='material-community-icons' size={12}/>
+            <StepText> [-] 0/1 Deploying Contract</StepText>
+          </View>
         )}
 
         { this.state.isBeginSignupSuccess ? (
@@ -185,29 +206,39 @@ class VotingModalScreen extends React.Component {
             <Text> [-] 0/1 Beginning setup Regrastration </Text>
           </View>
         )}
-      </PageView>
+      </StepView>
     )
   }
 
   // Step 2
   _onStopRegistration = async () => {
-    try {      
-      this.setState({isStartingVoting: true});
-      const {_success, _message} = await Contract.call(this.props.contractAddress, 'endRegistration');
-      console.log(_success)
-      console.log(_message)
-      if(_success){
-        this.setState({
-          isStartingVoting: false, 
-          isRegistrationSuccess: _success
-        });
-      }else{
-        console.log(_message);
-      }
-    } catch (error) {
-      console.log(error);
+    const {totalRegistered} = this.state;
+    if (!totalRegistered){
+      Alert.alert(
+        'No eligible voter.',
+        'At least 1 eligible voter.',
+        [
+          {text: 'Go Back'}
+        ]
+      );
+    }else{
+      try {      
+        this.setState({isStartingVoting: true});
+        const {_success, _message} = await Contract.call(this.props.contractAddress, 'endRegistration');
+        console.log(_success)
+        console.log(_message)
+        if(_success){
+          this.setState({
+            isStartingVoting: false, 
+            isRegistrationSuccess: _success
+          });
+        }else{
+          console.log(_message);
+        }
+      } catch (error) {
+        console.log(error);
+      }  
     }
-
   }
 
   _renderRegistrationStep = () => {
@@ -215,7 +246,7 @@ class VotingModalScreen extends React.Component {
     const {totalEligible} = this.props;
     // if( totalEligible === totalRegistered )
     return(
-      <PageView>
+      <StepView>
         { isRegistrationSuccess ? (
           <View>
             {/* TODO: registration time left */}
@@ -229,7 +260,7 @@ class VotingModalScreen extends React.Component {
             <Text> Total Registered: {totalRegistered}/{totalEligible} </Text>
             {
               isStartingVoting ? (
-                <Text>Staring....</Text>
+                <Text>Starting....</Text>
               ):(
                 <Button
                   title='Start Vote'
@@ -238,13 +269,13 @@ class VotingModalScreen extends React.Component {
               )}
           </View>          
         )}
-      </PageView>
+      </StepView>
     )
   }
 
   // // Step 3
   _renderVotingStep = () => (
-    <PageView>
+    <StepView>
       { this.state.isVotingSuccess ? (
           <View>
             <Text> [+] Voting success </Text>
@@ -255,14 +286,14 @@ class VotingModalScreen extends React.Component {
           </View> 
         )
       }
-    </PageView> 
+    </StepView> 
   )
 
   // Step 4
   _renderVoteResultStep = () => {
     const {isStartingComputeTally} = this.state;
     return(
-      <PageView>
+      <StepView>
         {isStartingComputeTally ? (
           <Text>Computing tally .... </Text>
         ):(
@@ -270,9 +301,13 @@ class VotingModalScreen extends React.Component {
             <Text> Question: {this.props.question} </Text>
             <Text> Total Voters: {this.state.totalRegistered} </Text>
             <BarGraph result={this.state.result} />
+            <Button
+              title='Done'
+              onPress={this.props._onFinishVoting}
+            />
           </ResultViewDetail>  
         )}
-      </PageView>
+      </StepView>
     )
   }
 
@@ -331,20 +366,24 @@ class VotingModalScreen extends React.Component {
         transparent={false}
         visible={ isCreating }
       >
-        {/* <ModalView> */}
+        <ModalView>
           <StepIndicatorView
             customStyles={customStyles}
             currentPosition={currentStep}
             labels={STEPS}
+            stepCount={STEPS.length}
           />
           
           { this._renderStep(currentStep) }
-        {/* </ModalView> */}
+        </ModalView>
       </Modal>
     )
   }
 }
 
 const mapStateToProps = ({contract}) => ({contractAbi: contract.contractAbi})
+const mapDispatchToProps = dispatch => 
+  bindActionCreators({updateVoteHistory}, dispatch)
 
-export default connect(mapStateToProps)(VotingModalScreen);
+
+export default connect(mapStateToProps, mapDispatchToProps)(VotingModalScreen);

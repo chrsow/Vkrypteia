@@ -1,141 +1,402 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet, TextInput
-} from 'react-native';
-// import { Button } from 'react-native-elements';
-import Button from '../Common/Button';
-import { Divider } from 'react-native-elements';
-import { connect } from 'react-redux';
-import styled from 'styled-components';
-
-// import "../global";
-// import Tx from 'ethereumjs-tx';
-// import getWeb3 from '../utils/getWeb3';
-// const web3 = getWeb3();
-
-import {
-  VOTER1_ADDRESS,
-  VOTER1_PRIVATEKEY,
-} from 'react-native-dotenv';
-
-import CreateVoteScreen from './CreateVoteScreen';
-import VotingCreationScreen from './VotingCreationScreen';
+import { View, Modal, Text, Alert } from 'react-native';
+import { 
+  FormLabel, FormInput, FormValidationMessage, Divider, Button, Icon
+} from 'react-native-elements';
 import QRCodeScreen from '../Common/QRCodeScreen';
-import QRCodeButton from '../Common/QRCodeButton';
+import VotingModalScreen from './VotingModalScreen';
+// import QRCode from 'react-native-qrcode-svg';
+import styled from 'styled-components';
+import Contract from '../../utils/Contract';
+import { isAddress } from '../../utils/helpers';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import { updateContract } from '../../reducers/contract';
+
+const VotingView = styled.View`
+  flex: 1;
+  flex-direction: column;
+  /* margin-bottom: 15; */
+`;
+
+const VotingHeaderView = styled.View`
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #4F80E1;
+`
+
+const VotingHeadText = styled.Text`
+  font-size: 25;
+  color: white;
+  font-weight: bold;
+`;
+
+const QuestionFormLabel = styled(FormLabel)`
+  margin-top: 150;
+`;
+
+const VoterAddField = styled(View)`
+  flex-direction: row;
+  margin-bottom: 10;
+  justify-content: space-between;
+`;
+
+const VoterFormLabel = styled(FormLabel)`
+
+`
+
+const VoterList = styled(View)`
+  /* flex: 1; */
+`;
+
+const VoterDetail = styled(View)`
+  flex-direction: row;
+  justify-content: space-around;
+`;
+
+const VoterAddressText = styled.Text`
+  justify-content: center;
+  align-items: center;
+  font-size: 13;
+`;
+
+const AddVoterButton = styled(Button)`
+  /* margin-right: 50; */
+`;
+
+const RemoverVoterIcon = styled(Icon)`
+
+`;
+
+const NewVoteButton = styled(Button)`
+  background-color: #4F80E1;
+`
+
+const ScanVoteButton = styled(Button)`
+  background-color: #4F80E1;
+  /* margin-top: */
+`;
 
 const DividerLine = styled(Divider)`
   height: 1;
-  background-color: #e1e8ee;
+  background-color: #C0C0C0;
+  margin: 15px 0px 15px 0px;
+  align-self: center;
+  width: 325;
 `;
 
-const VotingView = styled(View)`
-  flex: 1;
-  justify-content: center;
-`;
 
-class VotingScreen extends React.PureComponent{
-  static navigationOptions = {
-    tabBarLebel: 'Vote',
-  };
+class VotingCreationScreen extends React.Component{
+  state = {
+    // ***** For Creating Vote *****
+    isCreateVote: false,
+    question: '',
+    voters: [],
+    isCreating: false,
+    isAddingVoter: false,
+    // For alert warning
+    isDuplicateVoter: false,
+    isInvalidAddress: false,
+    isEmptyQuestion: false,
+    isEmptyVoter: false,
+    // For voting creation (contract deploy)
+    isDeployContractSuccess: false,
+    isBeginSignupSuccess: false,
 
-  constructor(props){
-    super(props);
-    this.state = {
-      // dataSource: new ListView.DataSource({
-      //   rowHasChanged: () => false,
-      //   sectionHeaderHasChanged: () => false,
-      // }),
-      voteId: '',
-      isSelectVoteId: false,
-      isScanningQRCode: false
+    // ***** For Searching Vote *****
+    isSearchingVote: false,
+  }
+
+  _onQuestionChange = (question) => {
+    this.setState({question});
+  }
+
+  _onAddVoter = (voter) => {
+    this.setState({ isAddingVoter: true });
+  }
+
+  // Cancel QR Code scan
+  _onPressCancelModal = () => {
+    this.setState({ isAddingVoter: false });
+  }
+  
+  // On success QRcode scan 
+  _onSelectVoter = (voter) => {
+    if(!isAddress(voter)){
+      this.setState({ isInvalidAddress: true });
+    } else {
+      let { voters } = this.state;
+      // In case we already add the voter
+      if(voters.findIndex(v => v === voter) >= 0) {
+        this.setState({ isDuplicateVoter: true, isAddingVoter: false });
+      } else {
+        this.setState({
+          voters: [...voters, voter],
+          isAddingVoter: false
+        });
+      }
     }
   }
 
-  componentDidMount(){
-    // let dataSource = this.state.dataSource.cloneWithRowsAndSections({
-
-    // });  
+  _onCreateVoting = () => {
+    const { question, voters } = this.state;
+    // Empty question
+    if(!question) {
+      this.setState({ isEmptyQuestion: true });
+    } else if(!voters.length){ // Empty Voters
+      this.setState({ isEmptyVoter: true })
+    } else {
+      this._onVoting(question, voters);
+    }
   }
 
-  _onPressNewVote = () => {
+  _onVoting = (question, voters) => {
+    // Oh man..., callback hell
+    this.setState({isCreating: true}, async ()=>{
+      let contractAddress = await Contract.deploy();
+      if(contractAddress){
+        console.log('contractAddress: ' + contractAddress);
+        this.props.updateContract(contractAddress);
+        this.setState({ isDeployContractSuccess: true }, async()=>{
+          let beginSetupSuccess = await Contract.call(contractAddress,'beginSignup',[question, 1200, 1200, voters]);
+          const { _success, _error } = beginSetupSuccess;
+          console.log("beginSignup success?" + _success);
+          if(_success){
+            this.setState({ isBeginSignupSuccess: true });
+          }else{
+            // error message
+            this.setState({isCreating: false});
+          }
+        });
+      } else {
+        this.setState({isCreating: false});
+        this._alertFaiedDeployContract();
+      }
+    });
+  }
+
+  _onFinishVoting = () => {
+    this.setState({isCreating: false});
+  }
+  
+  _onRemoveVoter = (voterAddress) => {
+    let newVoters = this.state.voters.filter(v => v !== voterAddress);
+    this.setState({
+      voters: newVoters
+    })
+  }
+  
+  // For vote Scan saerching
+  _onSearchingVote = () => {
+    this.setState({isSearchingVote: true});
+  }
+
+  // When voter scan qr code for voting
+  _onScanVote = () => {
     
   }
 
-  _onPressQRCodeScanVoteId = () => {
-    this.setState({isScanningQRCode: true});
+  // voter cancel for searching vote room
+  _onCancelSearchingVote = () => {
+    this.setState({isSearchingVote: false});
   }
 
-  _onSelectVoteId = (voteId) => {
-    this.setState({voteId, isSelectVoteId: true});
+
+  _alertEmptyQuestion = () => {
+    const onStopEmptyQuestionWarning = () => this.setState({ isEmptyQuestion: false })
+    Alert.alert(
+      'Empty Question',
+      'Question must not be blanked.',
+      [
+        {text: 'Go Back',onPress: onStopEmptyQuestionWarning}
+      ]
+    );
   }
 
-  _onPressCancelModal = () => {
-    this.setState({isScanningQRCode: false});
-    // this.props.navigation.dismissModal();
-  };
+  _alertEmptyVoter = () => {
+    const onStopEmptyVoterWarning = () => this.setState({ isEmptyVoter: false })
+    Alert.alert(
+      'Empty Voter',
+      'The vote must has at least 1 Voter.',
+      [
+        {text: 'Go Back',onPress: onStopEmptyVoterWarning}
+      ]
+    );
+  }
+
+  _alertSetDuplicateVoter = ()=> {
+    const onStopDuplicateWarning = () => this.setState({ isDuplicateVoter: false })
+    Alert.alert(
+      'Duplicate voter',
+      'Already added this voter.',
+      [
+        {text: 'Go Back',onPress: onStopDuplicateWarning}
+      ]
+    );
+  }
+
+  _alertInvalidAddress = () => {
+    const onStopInvalidAddressWarning = () => 
+      this.setState({ isInvalidAddress: false, isAddingVoter: false })
+    Alert.alert(
+      'Invalide address',
+      'The value is not a valid Ethereum address.',
+      [
+        {text: 'Go Back',onPress: onStopInvalidAddressWarning }
+      ]
+    );
+  }
+
+  _alertFaiedDeployContract = () => {
+    Alert.alert(
+      'Deployed Failed',
+      'Something wrong on deploying contract.',
+      [
+        {text: 'Go Back',onPress: ()=>{} }
+      ]
+    );
+  }
+
+  _renderVoterList = () => (
+    <VoterList>
+      {
+      this.state.voters.map( voterAddress => (
+        <VoterDetail key={voterAddress}>
+          <VoterAddressText> {voterAddress} </VoterAddressText>
+          <RemoverVoterIcon
+            onPress={() => this._onRemoveVoter(voterAddress)}
+            name='indeterminate-check-box'
+          />
+        </VoterDetail>  
+      ))
+    }
+    </VoterList>
+  )
+
+  // _renderVoteModal = () => {
+  //   const { 
+  //     question, isCreating, isDeployContractSuccess, isBeginSignupSuccess 
+  //   } = this.state;
+  //   const { contractAddress } = this.props.contract;
+  //   return(
+      
+  //   );
+  // }
+
+  _renderAlerts = () => {
+    const { 
+      isDuplicateVoter, isEmptyQuestion, isInvalidAddress, isEmptyVoter
+    } = this.state;
+
+    return(
+      <View>
+        {/* Warning on set the same voter */}
+        { isDuplicateVoter && this._alertSetDuplicateVoter() }
+
+        {/* Warning on set the same voter */}
+        { isEmptyQuestion && this._alertEmptyQuestion() }
+
+        {/* Warning on invalid voter address */}
+        { isInvalidAddress && this._alertInvalidAddress() }
+
+        {/* Warning on empty voter */}
+        { isEmptyVoter && this._alertEmptyVoter() }
+      </View>
+    );
+  }
 
   render(){
-    const {isSelectVoteId, isScanningQRCode, voteId} = this.state;
-    
-    return(
-      <View style={styles.container}>
-      {
-        isSelectVoteId ? (
-          <View voteId={voteId}/>
-          // <VotingCreationScreen voteId={voteId}/>
-      ):(
-        <View>
-        {
-          isScanningQRCode ? (
-            <QRCodeScreen 
-            _onPressCancelModal={this._onPressCancelModal} 
-            _onReadQrCode={this._onSelectVoteId}/>
-        ):(
-          <VotingView>
-            {/* <TextInput
-              style={styles.voteIdInput}
-              onChangeText={this._onPressQRCodeScanVoteId}
-            /> */}
-            {/* <QRCodeButton/> */}
-            <VotingCreationScreen/>
-            <DividerLine/>
-            <Button 
-              raised
-              // icon={{name:'add-circle-outline', buttonStyle: styles.button}}
-              icon={{name:'add-circle-outline'}}
-              onPress={this._onPressQRCodeScanVoteId}
-              title='Scan for Vote'
-              backgroundColor='blue'
-              // borderRadius={styles.button.borderRadius}
-            />          
-          </VotingView>
-        )}
-        </View>
-      )}
-      </View>
+    const { 
+      isSearchingVote, isAddingVoter,question, isCreating, isDeployContractSuccess,
+      isBeginSignupSuccess, voters } = this.state;
 
-    );
+    const { contractAddress } = this.props.contract;
+
+    const votingModalScreenProps = {
+      question, isCreating, isDeployContractSuccess, 
+      isBeginSignupSuccess, contractAddress,
+      totalEligible: voters.length,
+      _onFinishVoting: this._onFinishVoting
+    };
+    return isSearchingVote ? 
+      (
+        <QRCodeScreen
+          _onPressCancelModal={this._onCancelSearchingVote} 
+          _onReadQrCode={this._onScanVote}
+      />
+      ):(
+        <VotingView>
+          <VotingHeaderView>
+            <Icon 
+              color='white' name='hand' 
+              type='entypo' size={62}               
+              />
+            <VotingHeadText> Voting </VotingHeadText>
+          </VotingHeaderView>
+          {/* VOTE CREATION */}
+          <QuestionFormLabel>Question</QuestionFormLabel>
+          <FormInput onChangeText={this._onQuestionChange}/>
+          <VoterAddField>
+            <VoterFormLabel>Voters</VoterFormLabel>
+            <AddVoterButton
+              onPress={this._onAddVoter}
+              title='Add Voter'
+              backgroundColor='#6495ED'
+              borderRadius={15}
+            />
+          </VoterAddField>
+          {this._renderVoterList()}
+          <NewVoteButton 
+            // raised
+            icon={{name:'add-circle'}}
+            onPress={this._onCreateVoting}
+            title='New Vote'backgroundColor='#4F80E1'
+            borderRadius={15}
+            buttonStyle={{
+              alignSelf: 'center',
+              width: 300
+            }}
+          />      
+          {/* Modal */}
+          {/* { this._renderVoteModal() } */}
+          <VotingModalScreen {...votingModalScreenProps} />
+
+          {/* Alert Warning */}
+          { this._renderAlerts() }
+
+          {/* QR Code scanner */}
+          { isAddingVoter && 
+            <QRCodeScreen 
+              _onPressCancelModal={this._onPressCancelModal} 
+              _onReadQrCode={this._onSelectVoter}
+            />
+          }
+
+          <DividerLine/>
+
+          {/* VOTE SCAN */}
+          <ScanVoteButton
+            // icon={{name:'add-circle-outline', buttonStyle: styles.button}}
+            icon={{name:'add-circle-outline'}}
+            onPress={this._onSearchingVote}
+            title='Scan for Vote'
+            backgroundColor='rgba(78, 116, 289, 1)'
+            borderRadius={15}
+            buttonStyle={{
+              // height: 75
+              alignSelf: 'center',
+              width: 300
+            }}
+          />         
+        </VotingView>
+      )
   }
 }
 
-const styles = StyleSheet.create({
-  container:{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  voteIdInput:{
-    borderWidth: 1,
-    height: 40,
-    width: 250
-  },
-  // button:{
-  //   padding: 150,
-  //   borderRadius: 50
-  // }
-});
+const mapStateToProps = ({contract}) => ({contract})
 
-export default VotingScreen;
-// export default connect()(VotingScreen);
+const mapDispatchToProps = dispatch => 
+  bindActionCreators({updateContract}, dispatch)
+
+export default connect(mapStateToProps, mapDispatchToProps)(VotingCreationScreen);
