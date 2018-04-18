@@ -22,7 +22,7 @@ const ProfileScreenView = styled.View`
 const HeaderView = styled.View`
   flex-direction: column;
   padding: 25px;
-  background-color: #4F80E1;
+  background-color: #292C44;
   justify-content: center;
   align-items: center;
 `
