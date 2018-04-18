@@ -19,9 +19,9 @@ export default function reducer(state = initialState, action = {}) {
   switch (action.type) {
     // do reducer stuff
     case UPDATE_VOTE_HISTORY:
-      return {scanHistory, voteHistory: [...voteHistory, action.payload]}
+      return {scanHistory, voteHistory: [action.payload, ...voteHistory]}
     case UPDATE_SCAN_VOTE_HISTORY:
-      return {voteHistory, scanHistory: [...scanHistory, action.payload]}
+      return {voteHistory, scanHistory: [action.payload, ...scanHistory]}
     default: return state;
   }
 }
