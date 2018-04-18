@@ -7,17 +7,10 @@ import styled from 'styled-components';
 
 import VotingHistoryDetail from './VotingHistoryDetail';
 
-const VotingHistoryView = styled.View`
-  /* justify-content: center; */
+const VotingHistoryView = styled.ScrollView`  
+  flex: 1;
 `;
-class VotingHistoryScreen extends React.PureComponent{
-  constructor(props){
-    super(props);
-    const { voteHistory } = this.props.screenProps.history;
-    this.state = {
-      voteHistory
-    }
-  }
+class VotingHistoryScreen extends React.PureComponent{  
   _onPressVoteDetail = (contractAddress, question, result) => {
     const { navigate } = this.props.navigation;
     navigate('VotingHistoryDetail',{
@@ -28,8 +21,7 @@ class VotingHistoryScreen extends React.PureComponent{
   _renderVotingHistory = () => (
     <List>
     {
-      // this.props.voteHistory.map(()=>(
-      this.state.voteHistory.map((vote, index)=>{
+      this.props.screenProps.history.voteHistory.map((vote, index)=>{
         const {contractAddress, question, result} = vote;
         return(
           <ListItem
@@ -58,19 +50,26 @@ class VotingHistoryScreen extends React.PureComponent{
   }
 }
 
-const VotingHistoryStack = StackNavigator({
-  VotingHistory: {
-    screen: VotingHistoryScreen,
-    // title: 'History'
-  },
-  VotingHistoryDetail: {
-    screen: VotingHistoryDetail,
-    // title: 'Detail'
-    navigationOptions: {
-      // headerTitle: 'Result',
-      showLabel: false
+const VotingHistoryStack = StackNavigator(
+  {
+    VotingHistory: {
+      screen: VotingHistoryScreen,
+      // headerStyle: {
+      //   width: 50
+      // }
+    },
+    VotingHistoryDetail: {
+      screen: VotingHistoryDetail,
+      navigationOptions: {
+        headerTitle: 'Result',
+        showLabel: false
+      }
     }
+  },{
+    
+    // mode: 'modal',
+    // headerMode: 'none'
   }
-});
+);
 
 export default VotingHistoryStack;

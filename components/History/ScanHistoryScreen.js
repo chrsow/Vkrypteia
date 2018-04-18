@@ -9,15 +9,23 @@ import styled from 'styled-components';
 import Contract from '../../utils/Contract';
 
 const ScanHistoryView = styled.View`
-
+  flex: 1;
+  flex-direction: column;
 `
+
+const AddNewVoteHistoryButton = styled(Button)`
+  margin-top: 15;
+`;
+
+const LoadingText = styled.Text`
+
+`;
+
 
 class ScanHistoryScreen extends React.PureComponent{
   constructor(props){
     super(props);
-    const {scanHistory} = this.props.screenProps.history;
     this.state = {
-      scanHistory,
       isScanningVoteHistory: false,
       isLoadingVoteHistory: false
     }
@@ -45,16 +53,17 @@ class ScanHistoryScreen extends React.PureComponent{
   _renderScanVotingHistory = () => (
     <List>
     {
-      // this.props.voteHistory.map(()=>(
-      this.state.scanHistory.map((vote, index)=>{
+      this.props.screenProps.history.scanHistory.map((vote, index)=>{
         const {contractAddress, question, result} = vote;
         return(
           <ListItem
             roundAvatar
-            // avatar={{uri:vote.avatar_url}}
+            avatar={{}}
             key={index}
             title={question}
             subtitle={contractAddress}
+            rightTitle={(result[0] > result[1]) ? 'Yes' : 'No'}
+            rightTitleStyle={{color: 'green'}}
             onPress={() => this._onPressVoteDetail(contractAddress, question, result)}
           />
         )
@@ -68,13 +77,19 @@ class ScanHistoryScreen extends React.PureComponent{
     const {isScanningVoteHistory, isLoadingVoteHistory} = this.state;
     return(
       <ScanHistoryView>
-        <Button 
+        <AddNewVoteHistoryButton 
           raised
           icon={{name: 'add'}}
           title='Add New Vote History'
           onPress={()=> this.setState({isScanningVoteHistory: true})}
+          backgroundColor='#4F80E1'
+          borderRadius={15}
+          buttonStyle={{
+            alignSelf: 'center',
+            width: 350
+          }}   
         />
-        {isLoadingVoteHistory && <Text> Loading ... </Text>}
+        {isLoadingVoteHistory && <LoadingText> Loading ... </LoadingText>}
         {this._renderScanVotingHistory()}
         {
           isScanningVoteHistory && 

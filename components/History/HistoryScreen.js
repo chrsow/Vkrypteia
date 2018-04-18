@@ -5,7 +5,8 @@ import {
 // import { createBottomTabNavigator } from 'react-navigation';
 import { createMaterialTopTabNavigator } from 'react-navigation-tabs';
 import { TabNavigator } from 'react-navigation';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import { Icon } from 'react-native-elements';
+// import Icon from 'react-native-vector-icons/FontAwesome';
 
 import QRCodeScreen from '../Common/QRCodeScreen';
 import VotingHistoryScreen from './VotingHistoryScreen';
@@ -48,35 +49,56 @@ const HistoryTabs = TabNavigator(
     }
   },{
     initialRouteName: 'History',
+    headerMode: 'screen',
     tabBarOptions:{
+      tabStyle: {
+        height: 50,    
+      },
+      title: 'none',
       labelStyle: {
         fontSize: 12,
       },
+      indicatorStyle: {
+        backgroundColor: 'white'
+      },
+    
+      activeTintColor: 'white',
       style: {
-
         backgroundColor: '#4F80E1',
       },
     },
-    tabBarPosition: 'top'
+    tabBarPosition: 'top',
+    navigationOptions: {
+      header: { visible: false },
+
+    }
+    
   }
 )
 
-const HistoryScreen = (props) => (
-  <HistoryScreenView>
-    <HistoryHeaderView>
-      <Icon color='white' name='rocket' size={62} />
-      <HeaderText> History </HeaderText>
-    </HistoryHeaderView>
-    <HistoryTabs
-      screenProps={{
-        history: props.history, 
-        actions:{
-          updateScanVoteHistory: props.updateScanVoteHistory
-        }
-      }}
-    />
-  </HistoryScreenView>
-)
+const HistoryTabsView = styled(HistoryTabs)`
+  flex: 1;
+`
+
+class HistoryScreen extends React.PureComponent{
+  render(){
+    const {history, updateScanVoteHistory} = this.props;
+    return(
+      <HistoryScreenView>
+        <HistoryHeaderView>
+          <Icon color='white' name='list' type='fontawesome' size={62} />
+          <HeaderText> History </HeaderText>
+        </HistoryHeaderView>
+        <HistoryTabsView
+          screenProps={{
+            history, 
+            actions: {updateScanVoteHistory}
+          }}
+        />
+      </HistoryScreenView>
+    )
+  }
+}
 
 const mapStateToProps = ({history}) => ({history})
 const mapDispatchToProps = dispacth => 
