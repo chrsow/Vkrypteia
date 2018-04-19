@@ -21,7 +21,6 @@ const LoadingText = styled.Text`
 
 `;
 
-
 class ScanHistoryScreen extends React.PureComponent{
   constructor(props){
     super(props);

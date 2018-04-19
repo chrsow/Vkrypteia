@@ -5,6 +5,7 @@ import {
 } from 'react-native-elements';
 import QRCodeScreen from '../Common/QRCodeScreen';
 import VotingModalScreen from './VotingModalScreen';
+import VoterScreen from './Voter';
 // import QRCode from 'react-native-qrcode-svg';
 import styled from 'styled-components';
 import Contract from '../../utils/Contract';
@@ -26,7 +27,8 @@ const VotingHeaderView = styled.View`
   background: #4F80E1;
 `
 
-const VotingHeadText = styled.Text`
+const VotingHeaderText = styled.Text`
+  font-family: 'Montserrat-SemiBold';
   font-size: 25;
   color: white;
   font-weight: bold;
@@ -75,7 +77,6 @@ const NewVoteButton = styled(Button)`
 
 const ScanVoteButton = styled(Button)`
   background-color: #4F80E1;
-  /* margin-top: */
 `;
 
 const DividerLine = styled(Divider)`
@@ -104,8 +105,11 @@ class VotingCreationScreen extends React.Component{
     isDeployContractSuccess: false,
     isBeginSignupSuccess: false,
 
-    // ***** For Searching Vote *****
+    // ***** For Vote *****
     isSearchingVote: false,
+    isRegistering: false,
+    isVoting: false,
+    isVoteFinish: false
   }
 
   _onQuestionChange = (question) => {
@@ -152,14 +156,15 @@ class VotingCreationScreen extends React.Component{
   }
 
   _onVoting = (question, voters) => {
+    const { address, privateKey } = this.props;
     // Oh man..., callback hell
     this.setState({isCreating: true}, async ()=>{
-      let contractAddress = await Contract.deploy();
+      let contractAddress = await Contract.deploy(address, privateKey);
       if(contractAddress){
         console.log('contractAddress: ' + contractAddress);
         this.props.updateContract(contractAddress);
         this.setState({ isDeployContractSuccess: true }, async()=>{
-          let beginSetupSuccess = await Contract.call(contractAddress,'beginSignup',[question, 1200, 1200, voters]);
+          let beginSetupSuccess = await Contract.call(address, privateKey, contractAddress,'beginSignup',[question, 1200, 1200, voters]);
           const { _success, _error } = beginSetupSuccess;
           console.log("beginSignup success?" + _success);
           if(_success){
@@ -176,7 +181,7 @@ class VotingCreationScreen extends React.Component{
     });
   }
 
-  _onFinishVoting = () => {
+  _onFinishCreateVoting = () => {
     this.setState({isCreating: false});
   }
   
@@ -187,14 +192,25 @@ class VotingCreationScreen extends React.Component{
     })
   }
   
+  // ***** For Voter  *****
+
   // For vote Scan saerching
   _onSearchingVote = () => {
     this.setState({isSearchingVote: true});
   }
 
   // When voter scan qr code for voting
-  _onScanVote = () => {
-    
+  _onScanVote = async (contractAddress) => {
+    const { updateContract, address, privateKey } = this.props;
+    updateContract(contractAddress);
+    this.setState({isSearchingVote: false, isRegistering: true});
+    const {_success, _message} = await Contract.call(address, privateKey, contractAddress, 'register');
+    if(!_success){
+      
+    } else {
+      console.log('Register success')
+      this.setState({isRegistering: false, isVoting: true});
+    }
   }
 
   // voter cancel for searching vote room
@@ -202,6 +218,10 @@ class VotingCreationScreen extends React.Component{
     this.setState({isSearchingVote: false});
   }
 
+  // When vote finish
+  _onFinishVote = () => {
+    this.setState({isVoting: false, isVoteFinish: true});
+  }
 
   _alertEmptyQuestion = () => {
     const onStopEmptyQuestionWarning = () => this.setState({ isEmptyQuestion: false })
@@ -308,31 +328,48 @@ class VotingCreationScreen extends React.Component{
 
   render(){
     const { 
-      isSearchingVote, isAddingVoter,question, isCreating, isDeployContractSuccess,
-      isBeginSignupSuccess, voters } = this.state;
+      // For Create Vote
+      isSearchingVote, 
+      isAddingVoter,
+      question, 
+      isCreating, 
+      isDeployContractSuccess,
+      isBeginSignupSuccess, 
+      voters,
+      // For vote
+      isRegistering,
+      isVoting,
+      isVoteFinish
+    } = this.state;
 
     const { contractAddress } = this.props.contract;
 
     const votingModalScreenProps = {
-      question, isCreating, isDeployContractSuccess, 
-      isBeginSignupSuccess, contractAddress,
+      question, 
+      isCreating,
+      isDeployContractSuccess, 
+      isBeginSignupSuccess,
+      contractAddress,
       totalEligible: voters.length,
-      _onFinishVoting: this._onFinishVoting
+      _onFinishCreateVoting: this._onFinishCreateVoting
     };
-    return isSearchingVote ? 
-      (
-        <QRCodeScreen
-          _onPressCancelModal={this._onCancelSearchingVote} 
-          _onReadQrCode={this._onScanVote}
-      />
-      ):(
+
+    const voterScrenProps = {
+      isRegistering,
+      isVoting,
+      isVoteFinish,
+      _onFinishVote: this._onFinishVote,
+      contractAddress
+    }
+
+    return(
         <VotingView>
           <VotingHeaderView>
             <Icon 
               color='white' name='hand' 
               type='entypo' size={62}               
               />
-            <VotingHeadText> Voting </VotingHeadText>
+            <VotingHeaderText> Voting </VotingHeaderText>
           </VotingHeaderView>
           {/* VOTE CREATION */}
           <QuestionFormLabel>Question</QuestionFormLabel>
@@ -351,11 +388,15 @@ class VotingCreationScreen extends React.Component{
             // raised
             icon={{name:'add-circle'}}
             onPress={this._onCreateVoting}
-            title='New Vote'backgroundColor='#4F80E1'
+            title='New Vote'
+            backgroundColor='#4F80E1'
             borderRadius={15}
+            titleStyle={{
+              fontFamilty: 'Montserrat-Semibold'
+            }}
             buttonStyle={{
               alignSelf: 'center',
-              width: 300
+              width: 300,
             }}
           />      
           {/* Modal */}
@@ -368,14 +409,21 @@ class VotingCreationScreen extends React.Component{
           {/* QR Code scanner */}
           { isAddingVoter && 
             <QRCodeScreen 
-              _onPressCancelModal={this._onPressCancelModal} 
-              _onReadQrCode={this._onSelectVoter}
+            _onPressCancelModal={this._onPressCancelModal} 
+            _onReadQrCode={this._onSelectVoter}
             />
           }
 
           <DividerLine/>
 
           {/* VOTE SCAN */}
+          { isSearchingVote &&
+            <QRCodeScreen
+              _onPressCancelModal={this._onCancelSearchingVote} 
+              _onReadQrCode={this._onScanVote}
+            />
+          }
+          <VoterScreen {...voterScrenProps} />
           <ScanVoteButton
             // icon={{name:'add-circle-outline', buttonStyle: styles.button}}
             icon={{name:'add-circle-outline'}}
@@ -394,7 +442,10 @@ class VotingCreationScreen extends React.Component{
   }
 }
 
-const mapStateToProps = ({contract}) => ({contract})
+const mapStateToProps = ({contract, user}) => {
+  const { privateKey, address } = user;
+  return {contract, privateKey, address}
+}
 
 const mapDispatchToProps = dispatch => 
   bindActionCreators({updateContract}, dispatch)

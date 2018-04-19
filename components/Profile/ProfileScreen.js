@@ -6,13 +6,11 @@ import {
   TextInput,
   Picker
 } from 'react-native';
-import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import QRCode from 'react-native-qrcode-svg';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import styled from 'styled-components';
-
 
 const ProfileScreenView = styled.View`
   flex: 1;
@@ -43,6 +41,7 @@ const UserNameText = styled.Text`
   font-size: 25;
   margin-top: 20;
   margin-bottom: 15;
+  /* font-family: 'Montserrat-Semibold'; */
 `
 
 const AddressText = styled.Text`
@@ -77,9 +76,5 @@ const mapStateToProps = ({user}) => {
   const { address, userName } = user;
   return { address, userName }
 };
-
-// const mapDispatchToProps = dispatch => bindActionCreators(
-
-// );
 
 export default connect(mapStateToProps)(ProfileScreen);

@@ -10,7 +10,6 @@ export default reducer = (state = initialState, action = {}) => {
     
     case UPDATE_CONTRACT_ADDRESS:
       return {...state, contractAddress: action.payload}
-
     default: return state;
   }
 }

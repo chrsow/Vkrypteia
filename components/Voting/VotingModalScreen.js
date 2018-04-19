@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, Modal } from 'react-native';
+import { View, Text, Modal, Alert } from 'react-native';
 import styled from 'styled-components';
 import StepIndicator from 'react-native-step-indicator';
-import { ViewPager } from 'rn-viewpager';
 import QRCode from 'react-native-qrcode-svg';
 import BarGraph from '../Common/BarGraph';
 import { Button, Icon } from 'react-native-elements';
@@ -29,10 +28,6 @@ const ResultViewDetail = styled(View)`
 
 const StepIndicatorView = styled(StepIndicator)`
   /* margin-vertical: 50; */
-`;
-
-const ViewPagerView = styled(ViewPager)`
-  flex-grow: 1;
 `;
 
 const StepView = styled(View)`
@@ -67,12 +62,19 @@ const customStyles = {
   currentStepLabelColor: '#4F80E1',//'#fe7013'
 }
 
-// const MyFont = Expo.Font.style('Montserrat-Light');
+
 const StepText = styled.Text`
-  /* font-family: MyFont; */
+  font-family: 'Montserrat-Medium';
+  color: #777;
+  font-size: 18;
+  margin-bottom: 15;
 `
 
 // Step1
+// const StepOneView = styled.View`
+//   flex: 1;
+// `
+
 const DeployText = styled.Text`
 
 `
@@ -82,7 +84,25 @@ const SignupText = styled.Text`
 `
 
 // Step2
+const StepTwoView = styled.View`
+  flex: 1;
+  align-items: center;
+`
 
+const RegistrationQRCode = styled(QRCode)`
+  /* margin: 40px 0px 15px 0px; */
+  margin-top: 50;
+  margin-bottom: 15;
+`
+
+const StartVoteButton = styled(Button)`
+  
+`
+
+// Step 4
+const DoneButton = styled(Button)`
+
+`;
 
 const web3 = getWeb3();
 
@@ -91,7 +111,7 @@ class VotingModalScreen extends React.Component {
     super(props);
     const contractInstance = new web3.eth.Contract(this.props.contractAbi);
     this.state = {
-      totalEligible: 1, //0
+      // totalEligible: 1, //0
       totalRegistered: 0, //0
       totalVoted: 0, //0
       isRegistrationSuccess: false,
@@ -119,10 +139,14 @@ class VotingModalScreen extends React.Component {
   async componentDidUpdate(prevProps){
     const {
       isRegistrationSuccess, isVotingSuccess, isFinish
-      , totalRegistered, totalEligible
+      , totalRegistered
     } = this.state;
 
-    const {isBeginSignupSuccess, contractAddress} = this.props;
+    const {
+      isBeginSignupSuccess,
+      contractAddress,
+      privateKey
+    } = this.props;
 
     // Only Set once when no one register
     if(isBeginSignupSuccess && !totalRegistered){
@@ -137,8 +161,7 @@ class VotingModalScreen extends React.Component {
           console.log('_totalRegistered: ' + _totalRegistered);
           _totalRegistered = Number(_totalRegistered);
           this.setState({
-            totalRegistered: _totalRegistered,
-            // isRegistrationSuccess: (_totalRegistered === totalEligible)
+            totalRegistered: _totalRegistered
           });
         }else{
           console.log(err);
@@ -166,7 +189,7 @@ class VotingModalScreen extends React.Component {
     // Compute tally
     if(isVotingSuccess && !isFinish){
       try{
-        const result = await Contract.call(contractAddress, 'computeTally');
+        const result = await Contract.call(privateKey, contractAddress, 'computeTally');
         const {question, updateVoteHistory} = this.props;
         this.setState({
           isStartingComputeTally: false,
@@ -192,18 +215,18 @@ class VotingModalScreen extends React.Component {
         ):(
           // Some Loader here
           <View>
-            <Icon name='loading' type='material-community-icons' size={12}/>
+            {/* <Icon name='loading' type='material-community-icons' size={12}/> */}
             <StepText> [-] 0/1 Deploying Contract</StepText>
           </View>
         )}
 
         { this.state.isBeginSignupSuccess ? (
           <View>
-            <Text> [+] 1/1 Begin Signup Sucess </Text>
+            <StepText> [+] 1/1 Begin Signup Sucess </StepText>
           </View>
         ):(
           <View>
-            <Text> [-] 0/1 Beginning setup Regrastration </Text>
+            <StepText> [-] 0/1 Beginning setup Regrastration </StepText>
           </View>
         )}
       </StepView>
@@ -222,9 +245,10 @@ class VotingModalScreen extends React.Component {
         ]
       );
     }else{
+      const { contractAddress, privateKey } = this.props;
       try {      
         this.setState({isStartingVoting: true});
-        const {_success, _message} = await Contract.call(this.props.contractAddress, 'endRegistration');
+        const {_success, _message} = await Contract.call(privateKey, contractAddress, 'endRegistration');
         console.log(_success)
         console.log(_message)
         if(_success){
@@ -250,24 +274,29 @@ class VotingModalScreen extends React.Component {
         { isRegistrationSuccess ? (
           <View>
             {/* TODO: registration time left */}
-            <Text> [+] Registration Success </Text>
+            <StepText> [+] Registration Success </StepText>
           </View>
         ):(
-          <View>
-            <QRCode 
+          <StepTwoView>
+            <RegistrationQRCode 
               value={this.props.contractAddress}
+              size={150}
             />
-            <Text> Total Registered: {totalRegistered}/{totalEligible} </Text>
+            <StepText> Total Registered: {totalRegistered}/{totalEligible} </StepText>
             {
               isStartingVoting ? (
-                <Text>Starting....</Text>
+                <StepText>Starting....</StepText>
               ):(
                 <Button
                   title='Start Vote'
                   onPress={this._onStopRegistration}
+                  borderRadius={15}
+                  buttonStyle={{
+                    backgroundColor: '#4F80E1'
+                  }}
                 />
               )}
-          </View>          
+          </StepTwoView>          
         )}
       </StepView>
     )
@@ -278,11 +307,11 @@ class VotingModalScreen extends React.Component {
     <StepView>
       { this.state.isVotingSuccess ? (
           <View>
-            <Text> [+] Voting success </Text>
+            <StepText> [+] Voting success </StepText>
           </View> 
         ):(
           <View>
-            <Text> Total Vote: {this.state.totalVoted}/{this.state.totalRegistered} </Text>
+            <StepText> Total Vote: {this.state.totalVoted}/{this.state.totalRegistered} </StepText>
           </View> 
         )
       }
@@ -295,15 +324,19 @@ class VotingModalScreen extends React.Component {
     return(
       <StepView>
         {isStartingComputeTally ? (
-          <Text>Computing tally .... </Text>
+          <StepText>Computing tally .... </StepText>
         ):(
           <ResultViewDetail>
-            <Text> Question: {this.props.question} </Text>
-            <Text> Total Voters: {this.state.totalRegistered} </Text>
+            <StepText> Question: {this.props.question} </StepText>
+            <StepText> Total Voters: {this.state.totalRegistered} </StepText>
             <BarGraph result={this.state.result} />
-            <Button
+            <DoneButton
               title='Done'
               onPress={this.props._onFinishVoting}
+              borderRadius={15}
+              buttonStyle={{
+                backgroundColor: '#4F80E1'
+              }}
             />
           </ResultViewDetail>  
         )}
@@ -381,7 +414,12 @@ class VotingModalScreen extends React.Component {
   }
 }
 
-const mapStateToProps = ({contract}) => ({contractAbi: contract.contractAbi})
+const mapStateToProps = ({contract, user}) => {
+  const { contractAbi } = contract;
+  const { privateKey } = user;
+  return { contractAbi, privateKey }
+}
+
 const mapDispatchToProps = dispatch => 
   bindActionCreators({updateVoteHistory}, dispatch)
 

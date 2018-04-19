@@ -1,19 +1,22 @@
 import { VOTER1_ADDRESS, VOTER1_PRIVATEKEY } from 'react-native-dotenv';
 
-// const LOAD   = 'vkrypteia/user/LOAD';
-// const CREATE = 'vkrypteia/user/CREATE';
-// const UPDATE = 'vkrypteia/user/UPDATE';
-// const REMOVE = 'vkrypteia/user/REMOVE';
+const UPDATE_USER = 'vkrypteia/user/UPDATE_USER';
 
-const initialState = {
-  userName: 'Voter1',
-  address: VOTER1_ADDRESS ,
-  privateKey: VOTER1_PRIVATEKEY
-}
+// const initialState = {
+//   userName: 'Voter1',
+//   address: VOTER1_ADDRESS ,
+//   privateKey: VOTER1_PRIVATEKEY
+// }
 
-export default function reducer(state = initialState, action = {}) {
+export default function reducer(state = {}, action = {}) {
   switch (action.type) {
-    // do reducer stuff
+    case UPDATE_USER:
+      return action.payload
     default: return state;
   }
 }
+
+export const updateUser = (voter) => ({
+  type: UPDATE_USER,
+  payload: voter
+})

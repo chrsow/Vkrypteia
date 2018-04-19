@@ -16,10 +16,8 @@ const getWeb3 = (rpcUrl) => {
     rpcUrl = RINKEBY_RPC_URL+ INFURA_ACCESS_TOKEN;
   }
 
-  // const provider = new Web3.providers.WebsocketProvider('wss://rinkeby.infura.io/ws');
   const provider = new Web3.providers.WebsocketProvider('wss://websocket-rinkeby.ethereum.nodes.augur.net');
   // const provider = new Web3.providers.HttpProvider(rpcUrl);
-  // const provider = new Web3.providers.WebsocketProvider('http://127.0.0.1:8545');
   const web3 = new Web3(provider);
 
   if (typeof web3.eth.getAccountsPromise === "undefined") {
