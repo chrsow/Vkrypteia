@@ -95,6 +95,7 @@ contract Vkrypteia is Ownable {
     // Events list
     event BeginSignup(string _message, bool _success);
     event VoterRegistered(uint _totalRegistered); // When each voter has registered
+    event StartVote(); // enter VOTE state
     event VoterVoted(uint _totalVoted); //When each voter has voted
     event FinishVote(string _message); 
     event tallyComputed(string _message);
@@ -183,6 +184,7 @@ contract Vkrypteia is Ownable {
             state = State.VOTE;
             _success = true;
             _message = "";
+            emit StartVote();
         }
         
     }
