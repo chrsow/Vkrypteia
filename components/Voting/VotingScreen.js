@@ -203,10 +203,13 @@ class VotingCreationScreen extends React.Component{
   _onScanVote = async (contractAddress) => {
     const { updateContract, address, privateKey } = this.props;
     updateContract(contractAddress);
-    this.setState({isSearchingVote: false, isRegistering: true});
+    this.setState({
+      isSearchingVote: false,
+      isRegistering: true
+    });
     const {_success, _message} = await Contract.call(address, privateKey, contractAddress, 'register');
     if(!_success){
-      
+      console.log(_message);
     } else {
       console.log('Register success')
       this.setState({isRegistering: false, isVoting: true});

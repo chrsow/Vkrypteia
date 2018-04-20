@@ -138,24 +138,28 @@ class VotingModalScreen extends React.Component {
 
   async componentDidUpdate(prevProps){
     const {
-      isRegistrationSuccess, isVotingSuccess, isFinish
-      , totalRegistered
+      isRegistrationSuccess,
+      isVotingSuccess,
+      isFinish, 
+      totalRegistered,
+      contractInstance
     } = this.state;
 
     const {
       isBeginSignupSuccess,
       contractAddress,
+      address,
       privateKey
     } = this.props;
 
     // Only Set once when no one register
     if(isBeginSignupSuccess && !totalRegistered){
-      this.state.contractInstance.options.address = contractAddress;
+      contractInstance.options.address = contractAddress;
     }
     
     // Listen for voter registration
     if(isBeginSignupSuccess && !isRegistrationSuccess){
-      this.state.contractInstance.once('VoterRegistered',{}, (err, res)=>{
+      contractInstance.once('VoterRegistered',{}, (err, res)=>{
         if(!err){
           const {returnValues:{_totalRegistered}} = res;
           console.log('_totalRegistered: ' + _totalRegistered);
@@ -171,7 +175,7 @@ class VotingModalScreen extends React.Component {
 
     // Listen for voter voting
     if(isRegistrationSuccess && !isVotingSuccess){
-      this.state.contractInstance.once('VoterVoted',{},(err,res)=>{
+      contractInstance.once('VoterVoted',{},(err,res)=>{
         if(!err){
           const {returnValues:{_totalVoted}} = res;
           _totalVoted = Number(_totalVoted);
@@ -189,7 +193,7 @@ class VotingModalScreen extends React.Component {
     // Compute tally
     if(isVotingSuccess && !isFinish){
       try{
-        const result = await Contract.call(privateKey, contractAddress, 'computeTally');
+        const result = await Contract.call(address, privateKey, contractAddress, 'computeTally');
         const {question, updateVoteHistory} = this.props;
         this.setState({
           isStartingComputeTally: false,
@@ -245,10 +249,10 @@ class VotingModalScreen extends React.Component {
         ]
       );
     }else{
-      const { contractAddress, privateKey } = this.props;
+      const { contractAddress, address, privateKey } = this.props;
       try {      
-        this.setState({isStartingVoting: true});
-        const {_success, _message} = await Contract.call(privateKey, contractAddress, 'endRegistration');
+        this.setState({ isStartingVoting: true });
+        const {_success, _message} = await Contract.call(address, privateKey, contractAddress, 'endRegistration');
         console.log(_success)
         console.log(_message)
         if(_success){
@@ -332,7 +336,7 @@ class VotingModalScreen extends React.Component {
             <BarGraph result={this.state.result} />
             <DoneButton
               title='Done'
-              onPress={this.props._onFinishVoting}
+              onPress={this.props._onFinishVote}
               borderRadius={15}
               buttonStyle={{
                 backgroundColor: '#4F80E1'
@@ -416,8 +420,8 @@ class VotingModalScreen extends React.Component {
 
 const mapStateToProps = ({contract, user}) => {
   const { contractAbi } = contract;
-  const { privateKey } = user;
-  return { contractAbi, privateKey }
+  const { privateKey, address } = user;
+  return { contractAbi, address, privateKey }
 }
 
 const mapDispatchToProps = dispatch => 
