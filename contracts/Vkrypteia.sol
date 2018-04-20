@@ -40,6 +40,7 @@ contract Vkrypteia is Ownable {
     mapping (address => bool) public eligible; // Whitelist of addresses
     mapping (address => bool) public registered; // Does voter registered?
     // mapping (address => bool) public receivedEther; //Voters who are already received Ether
+    uint public totalEligible;
     uint public totalRegistered;
     uint public totalVoted;
 
@@ -135,11 +136,13 @@ contract Vkrypteia is Ownable {
 
         question = _question;
         // Set Eligible Voters
-        for(uint i = 0; i < _addresses.length; i++) {
+        totalEligible = _addresses.length;
+        for(uint i = 0; i < totalEligible; i++) {
             eligible[_addresses[i]] = true;
             addresses.push(_addresses[i]);
             addressId[_addresses[i]] = i;
         }
+        
 
         state = State.SIGNUP;
         endSignupPhase = now + _signupTime;
