@@ -7,6 +7,7 @@ import QRCodeScreen from '../Common/QRCodeScreen';
 import VotingHistoryDetail from './VotingHistoryDetail';
 import styled from 'styled-components';
 import Contract from '../../utils/Contract';
+import { connect } from 'react-redux';
 
 const ScanHistoryView = styled.View`
   flex: 1;
@@ -32,8 +33,10 @@ class ScanHistoryScreen extends React.PureComponent{
 
   _onScanVoteHistory = async (contractAddress) => {
     this.setState({isScanningVoteHistory: false, isLoadingVoteHistory: true});
+    const { address } = this.props;
     const [question, result] = await Promise.all(
-      [Contract.call(contractAddress, 'question'), Contract.call(contractAddress, 'computeTally')]
+      [Contract.call(address, '' , contractAddress, 'question'), 
+      Contract.call(address, '' , contractAddress, 'computeTally')]
     )
     const _result = [Number(result[0]), Number(result[1])];
     this.props.screenProps.actions.updateScanVoteHistory(contractAddress, question, _result)
@@ -102,9 +105,11 @@ class ScanHistoryScreen extends React.PureComponent{
   }
 }
 
+const mapStateToProps = ({ user: { address } }) => ({ address })
+
 const ScanHistoryStack = StackNavigator({
   ScanHistoryScreen: {
-    screen: ScanHistoryScreen,
+    screen: connect(mapStateToProps)(ScanHistoryScreen),
     // title: 'Eeiei'
   },
   ScanVotingHistoryDetail: { screen: VotingHistoryDetail }
