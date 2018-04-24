@@ -205,7 +205,8 @@ class VotingCreationScreen extends React.Component{
     updateContract(contractAddress);
     this.setState({
       isSearchingVote: false,
-      isRegistering: true
+      isRegistering: true,
+      isVoting: true
     });
     const {_success, _message} = await Contract.call(address, privateKey, contractAddress, 'register');
     if(!_success){
@@ -223,7 +224,7 @@ class VotingCreationScreen extends React.Component{
 
   // When vote finish
   _onFinishVote = () => {
-    this.setState({isVoting: false, isVoteFinish: true});
+    this.setState({isVoting: false, isVoting: false, isVoteFinish: true});
   }
 
   _alertEmptyQuestion = () => {
