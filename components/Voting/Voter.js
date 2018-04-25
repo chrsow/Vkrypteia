@@ -1,13 +1,21 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, Button, Modal
+  View, Text, StyleSheet, Modal
 } from 'react-native';
-// import { createSwitchNavigator } from 'react-navigation';
+import { Button } from 'react-native-elements';
 import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { updateVoteHistory } from '../../reducers/history';
 import styled from 'styled-components';
 import StepIndicator from 'react-native-step-indicator';
+import BarGraph from '../Common/BarGraph';
 import getWeb3 from '../../utils/getWeb3';
 import Contract from '../../utils/Contract';
+
+const ModalView = styled.View`
+  flex-direction: column;
+  flex: 1;
+`;
 
 const StepView = styled(View)`
   flex: 1;
@@ -15,7 +23,23 @@ const StepView = styled(View)`
   align-items: center;
 `;
 
+const StepText = styled.Text`
+  font-family: 'Montserrat-Medium';
+  color: #777;
+  font-size: 18;
+  margin-bottom: 15;
+`
+
 const StepIndicatorView = styled(StepIndicator)`
+
+`;
+
+const ResultViewDetail = styled(View)`
+  flex:1;
+  align-items: center;
+`;
+
+const DoneButton = styled(Button)`
 
 `;
 
@@ -54,126 +78,223 @@ class VoterScreen extends React.Component{
       contractInstance,
       currentStep: 0,
       // isRegistering: false,
-      isRegistered: false,
-      totalRegisterd: 0,
+      isRegisterStep: false,
+      isVoteStep: false,
+      isResultStep: false,
+      isRegistered: false, // is passed register step or not
+      totalRegistered: 0,
       totalEligible: 0,
       isVoting: false,
       vote: '',
       isStartingComputeTally: false,
-      isVotingSuccess: false
+      isVoted: false, // is passed vote step or not
+      isSubmitedVote: false,
+      isFinish: false
     }
   }
 
   async componentDidUpdate(){
-    // const {isRegistering, isVoting, isVoteFinish, _onFinishVote} = this.props;
-
     const {
       isRegistering,
-      contractAddress
+      contractAddress,
+      address,
+      privateKey
     } = this.props;
 
     const {
+      question,
+      totalEligible,
+      totalRegistered,
       isRegistered,
+      isVoted,
       isStartingComputeTally,
-      contractInstance
+      contractInstance,
+      // isRegisterStep,
+      // isVoteStep,
+      // isResultStep
     } = this.state;
 
     if(isRegistering && !contractInstance.options.address){
-      this.state.contractInstance.options.address = contractAddress;
+      contractInstance.options.address = contractAddress;
     }
 
     // Listen for voter registration
-    if(isRegistering){
+    if(!isRegistered){    
+      if(!question || !totalEligible || !totalRegistered){
+        const [ question, totalEligible, totalRegistered ] = await Promise.all([
+          Contract.call(address, '', contractAddress, 'question'),
+          Contract.call(address, '', contractAddress, 'totalEligible'),
+          Contract.call(address, '', contractAddress, 'totalRegistered'),
+        ]);
+        this.setState({
+          question,
+          totalEligible: Number(totalEligible),
+        })
+      }
+      
       contractInstance.once('VoterRegistered',{}, (err, res)=>{
         if(!err){
           const {returnValues:{_totalRegistered}} = res;
-          console.log('_totalRegistered: ' + _totalRegistered);
-          _totalRegistered = Number(_totalRegistered);
           this.setState({
-            totalRegistered: _totalRegistered,
+            totalRegistered: Number(_totalRegistered),
           });
         }else{
           console.log(err);
         }
       });
+
+      contractInstance.once('StartVote', {}, (err, res) => {
+        if(err){
+          console.log(err);
+        }else{
+          this.setState({
+            // isRegisterStep: false,
+            // isVoteStep: true,
+            isRegistered: true,
+            // isVoting: true
+          })
+        }
+      });
     }
 
     // Listen for voter voting
-    if(isRegistered && !isVotingSuccess){
-      // contractInstance.once('VoterVoted',{},(err,res)=>{
-      //   if(!err){
-      //     const {returnValues:{_totalVoted}} = res;
-      //     _totalVoted = Number(_totalVoted);
-      //     this.setState({
-      //       totalVoted: _totalVoted,
-      //       isVotingSuccess: (_totalVoted === totalRegistered),
-      //       isStartingComputeTally: true
-      //     });
-      //   }else{
-      //     console.log(err);
-      //   }
-      // })
+    if(isRegistered && !isVoted){
+      contractInstance.once('VoterVoted',{},(err,res)=>{
+        if(!err){
+          const {returnValues:{_totalVoted}} = res;
+          const totalVoted = Number(_totalVoted);
+          this.setState({
+            totalVoted,
+            isVoted: (totalVoted === totalRegistered),
+            isStartingComputeTally: true
+          });
+        }else{
+          console.log(err);
+        }
+      })
+    }
+
+
+    if(isRegistered && isVoted){
+      try{
+        const result = await Contract.call(address, privateKey, contractAddress, 'computeTally');
+        console.log(result);
+        const { question, updateVoteHistory } = this.props;
+        this.setState({
+          isStartingComputeTally: false,
+          result: [Number(result[0]), Number(result[1])],
+          // isFinish: true
+        });
+        // Save to history
+        updateVoteHistory(contractAddress, question, result);
+      }catch(error){
+        console.log(error)
+      }
     }
   }
 
   // Step1
   _renderRegistrationStep = () => {
-    // const {
-    //   isRegistering, isRegistered, totalRegisterd, totalEligible
-    // } = this.state;
 
     const {
-      isRegistered
+      totalRegistered,
+      totalEligible,
+      question
     } = this.state;
     
     const {
-      isRegistering, totalEligible, totalRegisterd
+      isRegistering, 
     } = this.props;
 
     return(
       <StepView>
+        <StepText> Question: {question} </StepText>
         { !isRegistering ? (
           <View>
-            <Text> Total Registred: {totalRegisterd}/{totalEligible} </Text>
-            { isRegistered && <Text> You have already registerd </Text> }
+            <StepText> [+] You have already registerd </StepText>
+            <StepText> Total Registred: {totalRegistered}/{totalEligible} </StepText>
           </View>
         ):(
-          <Text> [+] Registering ... </Text>
+          <StepText> [+] Registering ... </StepText>
         )}
       </StepView>
     )
   }
 
   // Step 2
-  _onVote = (vote) => e => this.setState({vote})
+  _onVote = async (vote) => {
+    await this.setState({ isSubmitedVote: true });
+    const { contractAddress, address, privateKey } = this.props;
+    const { _success, _message } = await Contract.call(address, privateKey, contractAddress, 'submitVote',[web3.utils.toHex(vote)]);
+    if(_success){
+      this.setState({ isVoted: true });
+    } else {
+      console.log('Vote failed');
+      console.log(_message);
+    }
+  }
 
-  _renderVoteStep = () => (
-    <StepView>
-      <Text>VoteId: {this.props.contractAddress}</Text>
-      <Text> Question: {this.state.question} </Text>
-      <Button
-        onPress={this._onVote('Yes')}
-        title='Yes'
-      />
-      <Button
-        onPress={this._onVote('No')}
-        title='No'
-      />
-    </StepView>
-  )
+  _renderVoteStep = () => {
+    const { isSubmitedVote, question} = this.state;
+    return (
+      <StepView>
+        {/* <Text>VoteId: {this.props.contractAddress}</Text> */}
+        <StepText> Question: {question} </StepText>
+        {
+          isSubmitedVote ? (
+            <StepText> You have submited your vote. </StepText>
+          ):(
+            <View>
+              <Button
+                onPress={() => this._onVote('yes')}
+                title='Yes'
+                borderRadius={15}
+                buttonStyle={{
+                  marginTop: 15,
+                  width: 250,
+                  backgroundColor: '#4F80E1'
+                }}
+              />
+              <Button
+                onPress={() => this._onVote('no')}
+                title='No'
+                borderRadius={15}
+                buttonStyle={{
+                  marginTop: 15,
+                  width: 250,
+                  backgroundColor: '#4F80E1'
+                }}
+              />
+            </View>
+          )
+        }
+        
+      </StepView>
+    );
+  }
+  
 
   // Step 3
+  _onFinishVoting = () => {
+    this.setState({ isFinish: true });
+  }
+
   _renderResultStep = () => {
-    const {isStartingComputeTally} = this.state;
+    const {
+      question,
+      isStartingComputeTally,
+      totalRegistered,
+      result
+    } = this.state;
     return(
       <StepView>
         {isStartingComputeTally ? (
           <StepText>Computing tally .... </StepText>
         ):(
           <ResultViewDetail>
-            <StepText> Question: {this.props.question} </StepText>
-            <StepText> Total Voters: {this.state.totalRegistered} </StepText>
-            <BarGraph result={this.state.result} />
+            <StepText> Question: {question} </StepText>
+            <StepText> Total Voters: {totalRegistered} </StepText>
+            <BarGraph result={result} />
             <DoneButton
               title='Done'
               onPress={this.props._onFinishVoting}
@@ -204,16 +325,27 @@ class VoterScreen extends React.Component{
   }
 
   render(){
-    const {currentStep} = this.state;
-    const {isRegistering, isVoting, isVoteFinish} = this.props;
+    const {
+      isRegistered,
+      isVoted,
+      isFinish
+    } = this.state;
 
+    const {
+      // isVoteFinish,
+      isVoting,
+      isRegistering
+    } = this.props;
+
+    const currentStep = isRegistered + isVoted;
+    
     return(
       <Modal 
         onRequestClose={()=>{}}
         transparent={false}
-        visible={ isRegistering || isVoting }
+        visible={ isVoting }
       >
-        <View>
+        <ModalView>
           <StepIndicatorView
             customStyles={customStyles}
             currentPosition={currentStep}
@@ -222,12 +354,19 @@ class VoterScreen extends React.Component{
           />
 
           {this._renderStep(currentStep)}
-        </View>
+        </ModalView>
       </Modal>
     )
   }
 }
 
-const mapStateToProps = ({contract}) => ({contractAbi: contract.contractAbi})
+const mapStateToProps = ({ contract, user }) => {
+  const { contractAbi, contractAddress } = contract;
+  const { address, privateKey } = user;
+  return { contractAbi, contractAddress, address, privateKey }
+} 
 
-export default connect(mapStateToProps)(VoterScreen);
+const mapDispatchToProps = dispatch => 
+  bindActionCreators({ updateVoteHistory }, dispatch)
+
+export default connect(mapStateToProps, mapDispatchToProps)(VoterScreen);
