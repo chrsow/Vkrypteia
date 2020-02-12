@@ -27,8 +27,8 @@ voting, casting the vote and tallying the result.
 - The selected blockchain is `Ethereum` since its majority on smart contract platform with `Solidity` language which is Javascirpt-like language for developing smart contract application on Ethereum. Since all operations for interacting to Ethereum blockchain cost Gas, the network used for the project is in testnet (`Rinkeby`) which we can request a faucet for Ether.
 
 <p align="center">
-    <img src="imgs/eth.png" width="250" height="200">
-    <img src="imgs/solidity.png" width="250" height="200">
+    <img src="imgs/eth.png" width="300" height="200">
+    <img src="imgs/solidity.png" width="300" height="200">
 </p>
 
 ## Usage
