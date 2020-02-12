@@ -17,7 +17,6 @@ voting, casting the vote and tallying the result.
     <img src="imgs/react_native.png" width="200" height="200">
 </p>
 
-
 - `Web3` is a library with Javascript APIs for connecting to Ethereum blockchain.
 
 <p align="center">
@@ -27,8 +26,10 @@ voting, casting the vote and tallying the result.
 2. Blockchain
 - The selected blockchain is `Ethereum` since its majority on smart contract platform with `Solidity` language which is Javascirpt-like language for developing smart contract application on Ethereum. Since all operations for interacting to Ethereum blockchain cost Gas, the network used for the project is in testnet (`Rinkeby`) which we can request a faucet for Ether.
 
-![](imgs/eth.png)
-![](imgs/solidity.png)
+<p align="center">
+    <img src="imgs/eth.png" width="200" height="200">
+    <img src="imgs/solidity.png" width="200" height="200">
+</p>
 
 ## Usage
 
