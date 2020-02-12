@@ -12,7 +12,7 @@ voting, casting the vote and tallying the result.
 
 1. Mobile application
 - The mobile app is developed by a cross native platform (`React Native`) which supports for both Android and iOS.
-![](imgs/react_native.png)
+![](imgs/react_native.png =250x250)
 
 - `Web3` is a library with Javascript APIs for connecting to Ethereum blockchain.
 ![](imgs/web3.jpg)
