@@ -43,7 +43,7 @@ Here is a sequence diagram for this project.
 
 1. <b>[Admin]</b> fills the question for the vote and scan QR code of voters that will be voting, then there will be QR code for voters to join the vote.
 
-<p align="center" padding="50">
+<p align="center">
     <kbd>
         <img src="imgs/1.png" width="270" height="480">
     </kbd>
