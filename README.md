@@ -12,12 +12,17 @@ voting, casting the vote and tallying the result.
 
 1. Mobile application
 - The mobile app is developed by a cross native platform (`React Native`) which supports for both Android and iOS.
-![](imgs/react_native.png)
-<img src="imgs/react_native.png" width="250" height="250" alt="centered image">
+
+<p align="center">
+    <img src="imgs/react_native.png" width="200" height="200">
+</p>
 
 
 - `Web3` is a library with Javascript APIs for connecting to Ethereum blockchain.
-![](imgs/web3.jpg)
+
+<p align="center">
+    <img src="imgs/web3.jpg" width="200" height="200">
+</p>
 
 2. Blockchain
 - The selected blockchain is `Ethereum` since its majority on smart contract platform with `Solidity` language which is Javascirpt-like language for developing smart contract application on Ethereum. Since all operations for interacting to Ethereum blockchain cost Gas, the network used for the project is in testnet (`Rinkeby`) which we can request a faucet for Ether.
