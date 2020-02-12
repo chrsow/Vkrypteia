@@ -6,6 +6,8 @@ Mobile Application for Voting on Ethereum Blockchain. This project is my senior 
 The mobile app is developed by a cross native platform (React Native) which can (Android, iOS) and it interacts directly to Ethereum blockchain for deploying a smart contract for
 voting, casting the vote and tallying the result.
 
+![](imgs/architecture.png)
+
 ## Technologies
 
 1. Mobile application
