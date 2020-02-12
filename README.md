@@ -34,7 +34,10 @@ voting, casting the vote and tallying the result.
 ## Usage
 
 Here is a sequence diagram for this project.
-![](imgs/sequence_diagram.png)
+
+<p align="center">
+    <img src="imgs/sequence_diagram.png" width="290" height="400">
+</p>
 
 1. <b>[Admin]</b> fills the question for the vote and scan QR code of voters that will be voting, then there will be QR code for voters to join the vote.
 
