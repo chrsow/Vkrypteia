@@ -36,12 +36,14 @@ voting, casting the vote and tallying the result.
 Here is a sequence diagram for this project.
 
 <p align="center">
-    <img src="imgs/sequence_diagram.png" width="290" height="400">
+    <kbd>
+        <img src="imgs/sequence_diagram.png" width="290" height="400">
+    </kbd>
 </p>
 
 1. <b>[Admin]</b> fills the question for the vote and scan QR code of voters that will be voting, then there will be QR code for voters to join the vote.
 
-<p align="center">
+<p align="center" padding="50">
     <kbd>
         <img src="imgs/1.png" width="270" height="480">
     </kbd>
